@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/robfig/cron"
 	"net/http"
 )
 
@@ -22,9 +23,18 @@ func main()  {
 	//muxRouter.HandleFunc("/signUp",signUp)
 	muxRouter.HandleFunc("/{params}",errProjectId)
 	muxRouter.HandleFunc("/",errProjectId)
-
 	//muxRouter.HandleFunc("/{name}/{country}",ShowVisitorInfo)
+	c := cron.New()
+	c.AddFunc("@daily",func(){
+		fmt.Println("Start hourly job")
+		resetMethodCount()
+	})
+	c.Start()
 	http.ListenAndServe(":1926",muxRouter)
+
+
+
+
 	//RegisterRouters(muxRouter)
 	//server := &http.Server{
 	//	Addr: ":1926",

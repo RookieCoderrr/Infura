@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,28 +21,32 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func AuthProjectId(w http.ResponseWriter, r *http.Request) {
+	//获取URL中 apikey 参数
 	params := mux.Vars(r)
-	projectId:=params["id"]
-	fmt.Println(projectId)
-	fmt.Println(strconv.Quote(r.Host))
+	apikey:=params["id"]
+	fmt.Println(apikey)
+	//fmt.Println(strconv.Quote(r.Host))
+
+	//连接数据库
 	cfg, err := OpenConfigFile()
 	if err != nil {
 		log.Fatal(" open file error")
 	}
-
-	//连接数据库
 	ctx := context.TODO()
 	co,_:=intializeMongoOnlineClient(cfg, ctx)
-	filter:= bson.M{"projectid":projectId}
-	var result *mongo.SingleResult
-	result=co.Database("infura").Collection("Project").FindOne(ctx,filter)
 
+	//查看数据表中是否存在apikey
+	filter:= bson.M{"apikey":apikey}
+	var result *mongo.SingleResult
+	result=co.Database("testdb").Collection("projects").FindOne(ctx,filter)
+
+	//不存在apikey,直接返回http响应
 	if result.Err() != nil {
 		fmt.Println("=================PROJECT ID DOESN'T EXIST===============")
 		//msg, _ :=json.Marshal(appError{result.Err(),"projectId "+projectId+" doesn't exist",8})
 		//w.Header().Set("Content-Type","application/json")
 		//w.Write(msg)
-		fmt.Fprintf(w,"invalid projectId "+projectId)
+		fmt.Fprintf(w,"invalid projectId "+apikey)
 		return
 	} else {
 		res,err:=result.DecodeBytes()
@@ -52,54 +54,56 @@ func AuthProjectId(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		fmt.Println(res)
-		limit:=res.Lookup("limitperday").AsInt64()
-		host := res.Lookup("host").String()
-		fmt.Println(host)
-		if limit <= 0 {
-			fmt.Fprintf(w,"your usage is up to limit")
-			return
-		} else if host != strconv.Quote("") &&host != strconv.Quote(r.Host) {
-				fmt.Fprintf(w,"rejected due to project ID settings")
+		secretrequired := res.Lookup("secretrequired").Boolean()
+		apisecret := res.Lookup("apisecret").String()
+		if secretrequired {
+			fmt.Println(r.BasicAuth())
+			_,pwd,active := r.BasicAuth()
+			if !active {
+				fmt.Println("=================PROJECT SECRET REQUEIRED===============")
+				fmt.Fprintf(w,"Project Secret required ")
 				return
-		}
-		body, err := ioutil.ReadAll(r.Body)
+			} else {
+				 if apisecret != strconv.Quote(pwd) {
+					 fmt.Println("=================PROJECT SECRET ERROR===============")
+					 fmt.Fprintf(w,"Project Secret error ")
+					 return
+				 }
+			}
 
-		request := make(map[string]interface{})
-		err = json.Unmarshal(body, &request)
-		fmt.Println(request)
-
-		if err != nil {
-			http.Error(w, "can't decoding in JSON", http.StatusBadRequest)
 		}
-		requestBody := bytes.NewBuffer(body)
-		w.Header().Set("Content-Type", "application/json")
-		resp, err := http.Post("https://neofura.ngd.network", "application/json", requestBody)
-		if err != nil {
-			fmt.Fprintf(w,"Repost error")
+		isLimited := checkProjectLimit(res,co,ctx,filter,w)
+		if isLimited {
+			return
 		}
-		defer resp.Body.Close()
-		body, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Fprintf(w,"Read err")
+		isHostLimted := checkHostLimit(res,r,w)
+
+		if isHostLimted{
+			return
 		}
-		w.Write(body)
+		request := repostRequest(w,r)
+		recordApi(request,apikey,co,ctx)
+		recordProjectLimit(apikey,co,ctx)
 
-		filter:= bson.M{"projectid":projectId}
-		update:=bson.M{"$inc" :bson.M{"limitperday":-1}}
-		co.Database("infura").Collection("Project").UpdateOne(ctx,filter,update)
 
-		method := request["method"].(string)
-		createTime := time.Now().Unix()
-		rpc := rpcInfo{projectId,method,createTime}
-		insertOne, err := co.Database("infura").Collection("RpcInfo").InsertOne(ctx,rpc)
-		fmt.Println("Inserted a RPC method in database",insertOne)
+
 
 
 	}
+	//解析查询的document，避免再次查数据库
 
-	//
-	//w.WriteHeader(http.StatusOK)
-	//fmt.Fprintf(w,"Hello, %s!",params["id"])
+	//limit:=res.Lookup("limitperday").AsInt64()
+	//host := res.Lookup("host").String()
+	//fmt.Println(host)
+	//if limit <= 0 {
+	//	fmt.Fprintf(w,"your usage is up to limit")
+	//	return
+	//} else if host != strconv.Quote("") &&host != strconv.Quote(r.Host) {
+	//		fmt.Fprintf(w,"rejected due to project ID settings")
+	//		return
+	//}
+	//提取secretrequired字段
+
 }
 
 func errProjectId(w http.ResponseWriter, r *http.Request){
