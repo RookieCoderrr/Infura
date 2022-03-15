@@ -1,8 +1,10 @@
-package main
+package tool
 
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,12 +13,10 @@ import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -39,28 +39,7 @@ type Config struct {
 	} `yaml:"database_test"`
 }
 
-//type userInfo struct {
-//	Email string
-//	Password string
-//	ProjectId string
-//	Limit int
-//	Host string
-//	CreateTime int64
-//}
 
-type userInfo struct {
-	Email string
-	Password string
-}
-type projectInfo struct {
-	Email string
-	Name string
-	ProjectId string
-	LimitPerDay int
-	LimitPerSecond int
-	Host string
-	CreateTime int64
-}
 type rpcInfo struct {
 	Apikey string
 	Method string
@@ -71,19 +50,8 @@ type projectLimit struct {
 	MethodCount int
 	Timestamp int64
 }
-func randomProjectId() string{
-	rand.Seed(time.Now().UnixNano())
-	chars :=[]rune("abcdefghijklmnopqrstuvwxyz" + "0123456789")
-	length := 30
-	var b strings.Builder
-	for i := 0 ; i <length; i ++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
-	}
-	str := b.String()
-	return str
-}
 
-func intializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client, string) {
+func IntializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client, string) {
 	var clientOptions *options.ClientOptions
 	var dbOnline string
 	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
@@ -102,7 +70,7 @@ func intializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client,
 	fmt.Println("Connect mongodb success")
 	return co, dbOnline
 }
-func checkProjectLimit (res bson.Raw,client *mongo.Client ,ctx context.Context, filter bson.M, w http.ResponseWriter) bool{
+func CheckProjectLimit (res bson.Raw,client *mongo.Client ,ctx context.Context, filter bson.M, w http.ResponseWriter) bool{
 	limitPerDay:=res.Lookup("limitperday").AsInt64()
 
 	var resultLimit *mongo.SingleResult
@@ -124,13 +92,13 @@ func checkProjectLimit (res bson.Raw,client *mongo.Client ,ctx context.Context, 
 		}
 	}
 }
-func checkHostLimit (res bson.Raw,r *http.Request,w http.ResponseWriter) bool{
+func CheckHostLimit (res bson.Raw,r *http.Request,w http.ResponseWriter) bool{
 	hostList := res.Lookup("origin").Array()
 	host := r.Host
 	fmt.Println(host)
 	for i := 0; i < 100; i++ {
 		 hostData,err:=hostList.IndexErr(uint(i))
-			fmt.Println(hostData.Value().String())
+
 		 if i == 0 && err != nil {
 		 	fmt.Println("===========noHost=============")
 		 	return false
@@ -147,7 +115,7 @@ func checkHostLimit (res bson.Raw,r *http.Request,w http.ResponseWriter) bool{
 	return false
 
 }
-func repostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{}{
+func RepostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{}{
 	body, err := ioutil.ReadAll(r.Body)
 
 	request := make(map[string]interface{})
@@ -171,7 +139,7 @@ func repostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{
 	w.Write(body)
 	return request
 }
-func recordApi  (req map[string]interface{},apikey string, client *mongo.Client ,ctx context.Context) {
+func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client ,ctx context.Context) {
 	method := req["method"].(string)
 	createTime := time.Now().Unix()
 	rpc := rpcInfo{apikey,method,createTime}
@@ -183,7 +151,7 @@ func recordApi  (req map[string]interface{},apikey string, client *mongo.Client 
 
 }
 
-func recordProjectLimit (apikey string, client *mongo.Client ,ctx context.Context) {
+func RecordProjectLimit (apikey string, client *mongo.Client ,ctx context.Context) {
 	filter:= bson.M{"apikey":apikey}
 	var result *mongo.SingleResult
 	result=client.Database("testdb").Collection("projectlimits").FindOne(ctx,filter)
@@ -207,23 +175,23 @@ func recordProjectLimit (apikey string, client *mongo.Client ,ctx context.Contex
 
 
 }
-func resetMethodCount () {
-	cfg, err := OpenConfigFile()
-	if err != nil {
-		log.Fatal(" open file error")
-	}
-	ctx := context.TODO()
-	co,_:=intializeMongoOnlineClient(cfg, ctx)
-	update:=bson.M{"$set" :bson.M{"methodcount":0}}
-	updateMany, err := co.Database("testdb").Collection("projectlimits").UpdateMany(ctx,bson.M{},update)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("update all project limits to 0 in database",updateMany)
-
-}
+//func ResetMethodCount () {
+//	cfg, err := OpenConfigFile()
+//	if err != nil {
+//		log.Fatal(" open file error")
+//	}
+//	ctx := context.TODO()
+//	co,_:=intializeMongoOnlineClient(cfg, ctx)
+//	update:=bson.M{"$set" :bson.M{"methodcount":0}}
+//	updateMany, err := co.Database("testdb").Collection("projectlimits").UpdateMany(ctx,bson.M{},update)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	fmt.Println("update all project limits to 0 in database",updateMany)
+//
+//}
 func OpenConfigFile() (Config, error) {
-	absPath, _ := filepath.Abs("config.yml")
+	absPath, _ := filepath.Abs("../config.yml")
 	f, err := os.Open(absPath)
 	if err != nil {
 		return Config{}, err
@@ -237,4 +205,14 @@ func OpenConfigFile() (Config, error) {
 	}
 	return cfg, err
 }
+
+func EncodeMd5(secretId string, projectId string, timeStamp string) string {
+	has := md5.New()
+	has.Write([]byte(projectId+secretId+timeStamp))
+	b := has.Sum(nil)
+	md5 := hex.EncodeToString(b)
+	fmt.Println(md5)
+	return md5
+}
+
 
