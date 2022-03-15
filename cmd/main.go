@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Infura/tool"
 	"Infura/service"
+	"Infura/tool"
 	"context"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -13,6 +13,8 @@ import (
 
 func main()  {
 	fmt.Println("Server start")
+	//service.Sub(1644508800000,1644422400000)
+	tool.EncodeMd5("VZTxpIoXsrOKhFbF","nXlGyreGpwmmgclH","1644422400000")
 	cfg, err :=  tool.OpenConfigFile()
 	if err != nil {
 		log.Fatal(" open file error")
