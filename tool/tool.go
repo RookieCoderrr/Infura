@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/yaml.v3"
@@ -16,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
 
@@ -51,12 +51,21 @@ type projectLimit struct {
 	Timestamp int64
 }
 
-func IntializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client, string) {
+func InitializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client, string) {
+	rt := os.ExpandEnv("${RUNTIME}")
 	var clientOptions *options.ClientOptions
 	var dbOnline string
-	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
-	dbOnline = cfg.Database_main.Database
-
+	switch rt {
+	case "test":
+		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_test.Host + ":" + cfg.Database_test.Port )
+		dbOnline = cfg.Database_main.Database
+	case "staging":
+		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
+		dbOnline = cfg.Database_main.Database
+	default:
+		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
+		dbOnline = cfg.Database_main.Database
+	}
 
 	clientOptions.SetMaxPoolSize(50)
 	co, err := mongo.Connect(ctx, clientOptions)
@@ -70,64 +79,42 @@ func IntializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client,
 	fmt.Println("Connect mongodb success")
 	return co, dbOnline
 }
-func CheckProjectLimit (res bson.Raw,client *mongo.Client ,ctx context.Context, filter bson.M, w http.ResponseWriter) bool{
-	limitPerDay:=res.Lookup("limitperday").AsInt64()
-
-	var resultLimit *mongo.SingleResult
-	resultLimit= client.Database("testdb").Collection("projectlimits").FindOne(ctx,filter)
-	resLimit, err := resultLimit.DecodeBytes()
-	var limit int64
-	if err != nil {
-		fmt.Println("No project limit recorded")
-		limit = 0
-		return false
+func CheckProjectLimit (limitPerDay int32, request int32) bool{
+	if limitPerDay >= request {
+		return true
 	} else {
-		fmt.Println(resLimit)
-		limit = resLimit.Lookup("methodcount").AsInt64()
-		if limit > limitPerDay {
-			fmt.Fprintf(w,"your usage is up to limit")
-			return true
-		} else {
-			return false
-		}
+		return false
 	}
 }
-func CheckHostLimit (res bson.Raw,r *http.Request,w http.ResponseWriter) bool{
-	hostList := res.Lookup("origin").Array()
-	host := r.Host
-	fmt.Println(host)
-	for i := 0; i < 100; i++ {
-		 hostData,err:=hostList.IndexErr(uint(i))
-
-		 if i == 0 && err != nil {
-		 	fmt.Println("===========noHost=============")
-		 	return false
-		 } else if hostData.Value().String() == strconv.Quote(host) {
-			 fmt.Println("===========Hostverified=============")
-		 	return false
-		 } else if err != nil {
-			 fmt.Fprintf(w,"Your host is limited")
-			 fmt.Println("===========No match Host =============")
-		 	return true
-		 }
-
+func CheckHostLimit (origins primitive.A, host string) bool{
+	if len(origins) == 0 {
+		return true
+	}
+	for i := 0; i < len(origins); i++ {
+		if host  == origins[i] {
+			return true
+		}
 	}
 	return false
 
 }
 func RepostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{}{
 	body, err := ioutil.ReadAll(r.Body)
-
 	request := make(map[string]interface{})
 	err = json.Unmarshal(body, &request)
 	fmt.Println(request)
-
-	if err != nil {
-		http.Error(w, "can't decoding in JSON", http.StatusBadRequest)
-	}
 	requestBody := bytes.NewBuffer(body)
 	w.Header().Set("Content-Type", "application/json")
-	resp, err := http.Post("https://neofura.ngd.network", "application/json", requestBody)
+	rt := os.ExpandEnv("${RUNTIME}")
+	var resp *http.Response
+	switch rt {
+	case "test":
+		resp, err = http.Post("https://testneofura.ngd.network:444", "application/json", requestBody)
+	case "staging":
+		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+	default:
+		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+	}
 	if err != nil {
 		fmt.Fprintf(w,"Repost error")
 	}
@@ -139,11 +126,11 @@ func RepostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{
 	w.Write(body)
 	return request
 }
-func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client ,ctx context.Context) {
+func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client ,ctx context.Context,dbName string) {
 	method := req["method"].(string)
-	createTime := time.Now().Unix()
+	createTime := time.Now().UnixNano()/1000000
 	rpc := rpcInfo{apikey,method,createTime}
-	insertOne, err := client.Database("testdb").Collection("projectrpcrecords").InsertOne(ctx,rpc)
+	insertOne, err := client.Database(dbName).Collection("projectrpcrecords").InsertOne(ctx,rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -151,22 +138,16 @@ func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client 
 
 }
 
-func RecordProjectLimit (apikey string, client *mongo.Client ,ctx context.Context) {
+func RecordRequest (apikey string, client *mongo.Client ,ctx context.Context, dbName string) {
 	filter:= bson.M{"apikey":apikey}
 	var result *mongo.SingleResult
-	result=client.Database("testdb").Collection("projectlimits").FindOne(ctx,filter)
+	result=client.Database(dbName).Collection("projects").FindOne(ctx,filter)
 	if result.Err() != nil {
-		createTime := time.Now().Unix()
-		methodCount := projectLimit{apikey,0,createTime}
-		insertOne, err := client.Database("testdb").Collection("projectlimits").InsertOne(ctx,methodCount)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Inserted a project limit in database",insertOne)
+		return
 
 	} else {
-		update:=bson.M{"$inc" :bson.M{"methodcount":1}}
-		updateOne, err :=client.Database("testdb").Collection("projectlimits").UpdateOne(ctx,filter,update)
+		update:=bson.M{"$inc" :bson.M{"request":1}}
+		updateOne, err :=client.Database(dbName).Collection("projects").UpdateOne(ctx,filter,update)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -175,21 +156,16 @@ func RecordProjectLimit (apikey string, client *mongo.Client ,ctx context.Contex
 
 
 }
-//func ResetMethodCount () {
-//	cfg, err := OpenConfigFile()
-//	if err != nil {
-//		log.Fatal(" open file error")
-//	}
-//	ctx := context.TODO()
-//	co,_:=intializeMongoOnlineClient(cfg, ctx)
-//	update:=bson.M{"$set" :bson.M{"methodcount":0}}
-//	updateMany, err := co.Database("testdb").Collection("projectlimits").UpdateMany(ctx,bson.M{},update)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	fmt.Println("update all project limits to 0 in database",updateMany)
-//
-//}
+func ResetRequestCount (co *mongo.Client,ctx context.Context,dbName string) {
+
+	update:=bson.M{"$set" :bson.M{"request":0}}
+	updateMany, err := co.Database("testdb").Collection("projects").UpdateMany(ctx,bson.M{},update)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("update all project request to 0 in database",updateMany)
+
+}
 func OpenConfigFile() (Config, error) {
 	absPath, _ := filepath.Abs("../config.yml")
 	f, err := os.Open(absPath)
@@ -206,12 +182,12 @@ func OpenConfigFile() (Config, error) {
 	return cfg, err
 }
 
-func EncodeMd5(secretId string, projectId string, timeStamp string) string {
+func EncodeMd5( projectId string,secretId string, timeStamp string) string {
 	has := md5.New()
 	has.Write([]byte(projectId+secretId+timeStamp))
 	b := has.Sum(nil)
 	md5 := hex.EncodeToString(b)
-	fmt.Println(md5)
+	//fmt.Println(md5)
 	return md5
 }
 
