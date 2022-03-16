@@ -137,6 +137,3 @@ func (s *Service)ErrProjectId(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w,"project ID is required")
 }
 
-func Sub (a int64 , b int64) {
-	fmt.Println(a-b)
-}

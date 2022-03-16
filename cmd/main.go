@@ -17,7 +17,7 @@ func main()  {
 	//fmt.Println(time.Now().UnixNano()/ 1000000)
 	//fmt.Println( time.Now().UnixNano()/ 1000000 - 1647398951614)
 	//service.Sub(1647430804000,1647420004000)
-	tool.EncodeMd5("vnQiyDzZKufyyrQw","pPozWsLfNjQRQhnV","1647402231786")
+	tool.EncodeMd5("vnQiyDzZKufyyrQw","pPozWsLfNjQRQhnV","1647409947700")
 	cfg, err :=  tool.OpenConfigFile()
 	if err != nil {
 		log.Fatal(" open file error")

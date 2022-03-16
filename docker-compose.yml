@@ -1,0 +1,25 @@
+version: "3.3"
+services:
+  infura:
+    build:
+      context: "./cmd"
+      args:
+        RT: ${RUNTIME}
+    ports:
+      - "1926:1926"
+    restart: always
+    container_name: infura_${RUNTIME}
+    depends_on:
+      - mongo
+
+
+  infura_mongo:
+    image: mongo
+    restart: always
+    container_name: mongo_${RUNTIME}
+    networks:
+      - network
+    ports:
+      - "27017:27017"
+    expose:
+      - "27017"

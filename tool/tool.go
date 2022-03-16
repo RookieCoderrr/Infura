@@ -44,6 +44,7 @@ type rpcInfo struct {
 	Apikey string
 	Method string
 	Timestamp int64
+	Net string
 }
 type projectLimit struct {
 	Apikey string
@@ -52,20 +53,12 @@ type projectLimit struct {
 }
 
 func InitializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client, string) {
-	rt := os.ExpandEnv("${RUNTIME}")
 	var clientOptions *options.ClientOptions
 	var dbOnline string
-	switch rt {
-	case "test":
-		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_test.Host + ":" + cfg.Database_test.Port )
-		dbOnline = cfg.Database_main.Database
-	case "staging":
-		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
-		dbOnline = cfg.Database_main.Database
-	default:
-		clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
-		dbOnline = cfg.Database_main.Database
-	}
+
+	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
+	dbOnline = cfg.Database_main.Database
+
 
 	clientOptions.SetMaxPoolSize(50)
 	co, err := mongo.Connect(ctx, clientOptions)
@@ -127,9 +120,20 @@ func RepostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{
 	return request
 }
 func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client ,ctx context.Context,dbName string) {
+	rt := os.ExpandEnv("${RUNTIME}")
+	var net string
+	switch rt {
+	case "test":
+		net = "testnet"
+	case "staging":
+		net = "mainnet"
+	default:
+		net = "mainnet"
+	}
+
 	method := req["method"].(string)
 	createTime := time.Now().UnixNano()/1000000
-	rpc := rpcInfo{apikey,method,createTime}
+	rpc := rpcInfo{apikey,method,createTime,net}
 	insertOne, err := client.Database(dbName).Collection("projectrpcrecords").InsertOne(ctx,rpc)
 	if err != nil {
 		log.Fatal(err)
@@ -151,7 +155,7 @@ func RecordRequest (apikey string, client *mongo.Client ,ctx context.Context, db
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("update a project limit in database",updateOne)
+		fmt.Println(" project request +1 in database",updateOne)
 	}
 
 
@@ -187,8 +191,13 @@ func EncodeMd5( projectId string,secretId string, timeStamp string) string {
 	has.Write([]byte(projectId+secretId+timeStamp))
 	b := has.Sum(nil)
 	md5 := hex.EncodeToString(b)
-	//fmt.Println(md5)
+	fmt.Println(md5)
 	return md5
 }
+
+func Sub (a int64 , b int64) {
+	fmt.Println(a-b)
+}
+
 
 
