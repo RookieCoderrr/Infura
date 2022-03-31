@@ -6,11 +6,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/mux"
-	//"github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
 )
 
+func init() {
+	go service.CleanupVisitors()
+}
 
 func main()  {
 	fmt.Println("Server start")
@@ -33,12 +36,12 @@ func main()  {
 	muxRouter.HandleFunc("/projectId/",s.ErrProjectId)
 	muxRouter.HandleFunc("/{params}",s.ErrProjectId)
 	muxRouter.HandleFunc("/",s.ErrProjectId)
-	//c := cron.New()
-	//c.AddFunc("@daily",func(){
-	//	fmt.Println("Start daily job")
-	//	tool.ResetRequestCount(co,context.TODO(),dbName)
-	//})
-	//c.Start()
+	c := cron.New()
+	c.AddFunc("@daily",func(){
+		fmt.Println("Start daily job")
+		tool.ResetRequestCount(co,context.TODO(),dbName)
+	})
+	c.Start()
 	http.ListenAndServe(":1926",muxRouter)
 
 }
