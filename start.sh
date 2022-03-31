@@ -8,7 +8,7 @@ then
 
     docker container rm infura_test
 
-    docker rmi infura -f
+    docker rmi test_infura -f
     docker-compose -p "test" up -d
 fi
 
@@ -19,7 +19,7 @@ then
 
     docker container rm infura_staging
 
-    docker rmi infura -f
+    docker rmi staging_infura -f
     docker-compose -p "staging" up -d
 fi
 

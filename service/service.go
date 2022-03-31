@@ -28,6 +28,8 @@ var (
 	request int32
 	limitPerDay int32
 	origins primitive.A
+	contractAddress primitive.A
+	apiRequest primitive.A
 	tokenClient string
 	timeStampStr string
 	timeStamp int64
@@ -38,9 +40,12 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 	apikey =params["id"]
 	host = r.Host
 	fmt.Println(host)
+
+
+
 	filter:= bson.M{"apikey":apikey}
 	var result map[string]interface{}
-	err :=s.Db.Database(s.DbName).Collection("projects").FindOne(context.TODO(),filter).Decode(&result)
+	err := s.Db.Database(s.DbName).Collection("projects").FindOne(context.TODO(),filter).Decode(&result)
 	if err == mongo.ErrNoDocuments || err != nil {
 		fmt.Println("=================PROJECT ID DOESN'T EXIST===============")
 		fmt.Fprintf(w, "invalid projectId "+apikey)
@@ -51,6 +56,8 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 	request = result["request"].(int32)
 	limitPerDay = result["limitperday"].(int32)
 	origins = result["origin"].(primitive.A)
+	contractAddress = result["contractAddress"].(primitive.A)
+	apiRequest = result["ApiRequest"].(primitive.A)
 	tokenClient = r.Header.Get("Token")
 	timeStampStr =  r.Header.Get("TimeStamp")
 	timeStamp, err = strconv.ParseInt(timeStampStr, 10, 64)
@@ -88,9 +95,11 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 			//fmt.Println(timeStamp)
 			tokenServer := tool.EncodeMd5(apikey,apiSecret,timeStampStr)
 			if tokenServer == tokenClient {
-				req := tool.RepostRequest(w,r)
-				tool.RecordApi(req,apikey,s.Db,context.TODO(),s.DbName)
-				tool.RecordRequest(apikey,s.Db,context.TODO(),s.DbName)
+				req := tool.RepostRequest(w,r,apiRequest,contractAddress)
+				if req != nil {
+					tool.RecordApi(req,apikey,s.Db,context.TODO(),s.DbName)
+					tool.RecordRequest(apikey,s.Db,context.TODO(),s.DbName)
+				}
 				return
 			} else {
 				fmt.Println("=================TOKEN INVALID===============")
@@ -109,9 +118,12 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "This projectId has reached the daily limit.")
 			return
 		}
-		req := tool.RepostRequest(w,r)
-		tool.RecordApi(req,apikey,s.Db,context.TODO(),s.DbName)
-		tool.RecordRequest(apikey,s.Db,context.TODO(),s.DbName)
+
+		req := tool.RepostRequest(w,r,apiRequest,contractAddress)
+		if req != nil {
+			tool.RecordApi(req,apikey,s.Db,context.TODO(),s.DbName)
+			tool.RecordRequest(apikey,s.Db,context.TODO(),s.DbName)
+		}
 		return
 	}
 

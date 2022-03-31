@@ -91,11 +91,51 @@ func CheckHostLimit (origins primitive.A, host string) bool{
 	return false
 
 }
-func RepostRequest(w http.ResponseWriter, r *http.Request) map[string]interface{}{
+
+func CheckContractAddress(contractDb primitive.A, contractParam string) bool {
+	if len(contractDb) == 0 {
+		return true
+	}
+	for i := 0; i < len(contractDb); i++ {
+		if contractParam  == contractDb[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func CheckApiRequest(apiRequestDb primitive.A, apiReqeustParam string) bool {
+	if len(apiRequestDb) == 0 {
+		return true
+	}
+	for i := 0; i < len(apiRequestDb); i++ {
+		if apiReqeustParam  == apiRequestDb[i] {
+			return true
+		}
+	}
+	return false
+}
+func RepostRequest(w http.ResponseWriter, r *http.Request, apiRequest primitive.A, contractAddress primitive.A ) map[string]interface{}{
 	body, err := ioutil.ReadAll(r.Body)
 	request := make(map[string]interface{})
 	err = json.Unmarshal(body, &request)
-	fmt.Println(request)
+	method := request["method"].(string)
+	if !CheckApiRequest(apiRequest,method) {
+		fmt.Println("=================ApiRequest not permitted===============")
+		fmt.Fprintf(w, "ApiRequest not permitted.")
+		return nil
+	}
+    params := request["params"].(map[string]interface{}) //interface to map
+    if params["ContractHash"] != nil {
+		if contract, ok := params["ContractHash"].(string) ; ok {
+			if !CheckContractAddress(contractAddress,contract) {
+				fmt.Println("=================ContractAddress not permitted===============")
+				fmt.Fprintf(w, "ContractAddress not permitted.")
+				return nil
+			}
+		}
+	}
+	fmt.Println(request,"success")
 	requestBody := bytes.NewBuffer(body)
 	w.Header().Set("Content-Type", "application/json")
 	rt := os.ExpandEnv("${RUNTIME}")

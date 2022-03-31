@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/robfig/cron/v3"
+	//"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
 )
@@ -17,7 +17,7 @@ func main()  {
 	//fmt.Println(time.Now().UnixNano()/ 1000000)
 	//fmt.Println( time.Now().UnixNano()/ 1000000 - 1647398951614)
 	//service.Sub(1647430804000,1647420004000)
-	tool.EncodeMd5("vnQiyDzZKufyyrQw","pPozWsLfNjQRQhnV","1647409947700")
+	tool.EncodeMd5("465355e80ce88bbf542a58eee1dadedf","4ab781f72c0bdb4edfe1565282ff93e0","1648698459000")
 	cfg, err :=  tool.OpenConfigFile()
 	if err != nil {
 		log.Fatal(" open file error")
@@ -33,12 +33,12 @@ func main()  {
 	muxRouter.HandleFunc("/projectId/",s.ErrProjectId)
 	muxRouter.HandleFunc("/{params}",s.ErrProjectId)
 	muxRouter.HandleFunc("/",s.ErrProjectId)
-	c := cron.New()
-	c.AddFunc("@daily",func(){
-		fmt.Println("Start daily job")
-		tool.ResetRequestCount(co,context.TODO(),dbName)
-	})
-	c.Start()
+	//c := cron.New()
+	//c.AddFunc("@daily",func(){
+	//	fmt.Println("Start daily job")
+	//	tool.ResetRequestCount(co,context.TODO(),dbName)
+	//})
+	//c.Start()
 	http.ListenAndServe(":1926",muxRouter)
 
 }

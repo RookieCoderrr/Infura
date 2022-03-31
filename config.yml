@@ -7,6 +7,7 @@
 #  dbname: "neofura"
 #  database: "neofura"
 database_main:
+#  host: "docker.for.mac.host.internal" 在服务器上要用这个
   host: "127.0.0.1"
   port: "27017"
   user: "admin"
@@ -15,7 +16,8 @@ database_main:
   database: "testdb"
 
 database_test:
-  host: "192.168.1.36"
+  #  host: "docker.for.mac.host.internal" 在服务器上要用这个
+  host: "127.0.0.1"
   port: "27017"
   user: ""
   pass: ""

@@ -8,7 +8,7 @@ RUN mkdir application
 
 COPY . ./application
 
-WORKDIR /application/cmd
+WORKDIR "application/cmd/"
 
 RUN  go build -o main main.go
 
