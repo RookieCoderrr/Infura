@@ -21,14 +21,6 @@ import (
 )
 
 type Config struct {
-	Database_main struct {
-		Host     string `yaml:"host"`
-		Port     string `yaml:"port"`
-		User     string `yaml:"user"`
-		Pass     string `yaml:"pass"`
-		Database string `yaml:"database"`
-		DBName   string `yaml:"dbname"`
-	} `yaml:"database_main"`
 	Database_test struct {
 		Host     string `yaml:"host"`
 		Port     string `yaml:"port"`
@@ -57,7 +49,7 @@ func InitializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client
 	var dbOnline string
 
 	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_test.Host + ":" + cfg.Database_test.Port )
-	dbOnline = cfg.Database_main.Database
+	dbOnline = cfg.Database_test.Database
 
 
 	clientOptions.SetMaxPoolSize(50)
