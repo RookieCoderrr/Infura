@@ -101,7 +101,7 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 	limitPerDay = result["limitperday"].(int32)
 	origins = result["origin"].(primitive.A)
 	contractAddress = result["contractAddress"].(primitive.A)
-	apiRequest = result["ApiRequest"].(primitive.A)
+	apiRequest = result["apiRequest"].(primitive.A)
 	tokenClient = r.Header.Get("Token")
 	timeStampStr =  r.Header.Get("TimeStamp")
 	timeStamp, err = strconv.ParseInt(timeStampStr, 10, 64)

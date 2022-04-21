@@ -1,7 +1,7 @@
 #!/bin/sh
 echo shut down existed docker service
 echo you env is $1
-if [ $1 == "TEST" ]
+if [ $1 = "TEST" ]
 then
     export RUNTIME="test"
     docker stop infura_test
@@ -12,7 +12,7 @@ then
     docker-compose -p "test" up -d
 fi
 
-if [ $1 == "STAGING" ]
+if [ $1 = "STAGING" ]
 then
     export RUNTIME="staging"
     docker stop infura_staging

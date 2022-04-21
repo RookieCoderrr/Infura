@@ -5,19 +5,25 @@ services:
       context: "."
       args:
         RT: ${RUNTIME}
+    #对于测试网服务，这个地方要改成1927:1926
     ports:
       - "1926:1926"
+    networks:
+      - magnet
     restart: always
     container_name: infura_${RUNTIME}
-    depends_on:
-      - infura_mongo
+#    depends_on:
+#      - infura_mongo
 
 
-  infura_mongo:
-    image: mongo
-    restart: always
-    container_name: mongo_${RUNTIME}
-    ports:
-      - "27017:27017"
-    expose:
-      - "27017"
+#  infura_mongo:
+#    image: mongo
+#    restart: always
+#    container_name: mongo_${RUNTIME}
+#    ports:
+#      - "27017:27017"
+#    expose:
+#      - "27017"
+networks:
+  magnet:
+    external: true

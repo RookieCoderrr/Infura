@@ -56,7 +56,7 @@ func InitializeMongoOnlineClient(cfg Config, ctx context.Context) (*mongo.Client
 	var clientOptions *options.ClientOptions
 	var dbOnline string
 
-	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_main.Host + ":" + cfg.Database_main.Port )
+	clientOptions = options.Client().ApplyURI("mongodb://"  +cfg.Database_test.Host + ":" + cfg.Database_test.Port )
 	dbOnline = cfg.Database_main.Database
 
 

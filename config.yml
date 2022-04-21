@@ -7,17 +7,17 @@
 #  dbname: "neofura"
 #  database: "neofura"
 database_main:
-#  host: "docker.for.mac.host.internal" 在服务器上要用这个
-  host: "127.0.0.1"
+  #在服务器上就要用这个替换localhost,共同使用一个网络才能使docker之间互通
+  host: "magnetdb"
   port: "27017"
-  user: "admin"
-  pass: "password"
+  user: ""
+  pass: ""
   dbname: "testdb"
   database: "testdb"
 
 database_test:
-  #  host: "docker.for.mac.host.internal" 在服务器上要用这个
-  host: "127.0.0.1"
+  #在服务器上就要用这个替换localhost
+  host: "magnetdb"
   port: "27017"
   user: ""
   pass: ""
