@@ -9,6 +9,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
+	"os"
 )
 
 func init() {
@@ -22,6 +23,15 @@ func main()  {
 	//service.Sub(1647430804000,1647420004000)
 	tool.EncodeMd5("465355e80ce88bbf542a58eee1dadedf","4ab781f72c0bdb4edfe1565282ff93e0","1648698459000")
 	cfg, err :=  tool.OpenConfigFile()
+	rt := os.ExpandEnv("${RUNTIME}")
+	switch rt {
+	case "test":
+		fmt.Println("test")
+	case "staging":
+		fmt.Println("staging")
+	default:
+		fmt.Println("default")
+	}
 	if err != nil {
 		log.Fatal(" open file error")
 	}
