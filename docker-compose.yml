@@ -8,6 +8,9 @@ services:
     #对于测试网服务，这个地方要改成1927:1926
     ports:
       - "1926:1926"
+    environment:
+      - RUNTIME
+      #-RUNTIME: staging
     networks:
       - magnet
     restart: always
