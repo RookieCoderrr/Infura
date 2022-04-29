@@ -11,7 +11,7 @@ database_test:
   #在服务器上就要用这个替换localhost
   host: "magnetdb"
   port: "27017"
-  user: ""
-  pass: ""
+  user: "magneter"
+  pass: "neo3magneter"
   dbname: "testdb"
   database: "testdb"
