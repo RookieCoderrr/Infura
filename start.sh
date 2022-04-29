@@ -23,4 +23,15 @@ then
     docker-compose -p "staging" up -d
 fi
 
+if [ $1 = "TESTMAGNET" ]
+then
+    export RUNTIME="testmagnet"
+    docker stop infura_testmagnet
+
+    docker container rm infura_testmagnet
+
+    docker rmi staging_testmagnet -f
+    docker-compose -p "testmagnet" up -d
+fi
+
 

@@ -27,6 +27,8 @@ func main()  {
 		fmt.Println("Runtime: test")
 	case "staging":
 		fmt.Println("Runtime: staging")
+	case "testmagnet":
+		fmt.Println("Runtime: testmagnet")
 	default:
 		fmt.Println("Runtime: default")
 	}

@@ -134,11 +134,13 @@ func RepostRequest(w http.ResponseWriter, r *http.Request, apiRequest primitive.
 	var resp *http.Response
 	switch rt {
 	case "test":
-		resp, err = http.Post("https://testneofura.ngd.network:444", "application/json", requestBody)
+		resp, err = http.Post("http://10.0.7.39:1926", "application/json", requestBody)
 	case "staging":
-		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+		resp, err = http.Post("http://10.0.7.39:1927", "application/json", requestBody)
+	case "testmagnet":
+		resp, err = http.Post("http://10.0.7.39:1929", "application/json", requestBody)
 	default:
-		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+		resp, err = http.Post("http://10.0.7.39:1927", "application/json", requestBody)
 	}
 	if err != nil {
 		fmt.Fprintf(w,"Repost error")
@@ -159,6 +161,8 @@ func RecordApi  (req map[string]interface{},apikey string, client *mongo.Client 
 		net = "testnet"
 	case "staging":
 		net = "mainnet"
+	case "testmagnet":
+		net = "testmagnet"
 	default:
 		net = "mainnet"
 	}
