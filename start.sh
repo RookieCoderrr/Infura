@@ -30,7 +30,7 @@ then
 
     docker container rm infura_testmagnet
 
-    docker rmi staging_testmagnet -f
+    docker rmi testmagnet_infura -f
     docker-compose -p "testmagnet" up -d
 fi
 

@@ -134,13 +134,13 @@ func RepostRequest(w http.ResponseWriter, r *http.Request, apiRequest primitive.
 	var resp *http.Response
 	switch rt {
 	case "test":
-		resp, err = http.Post("https://testneofura.ngd.network:444", "application/json", requestBody)
+		resp, err = http.Post("https://n3t4.n3magnet.xyz:444", "application/json", requestBody)
 	case "staging":
-		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+		resp, err = http.Post("https://mainnet.n3magnet.xyz:444", "application/json", requestBody)
 	case "testmagnet":
-		resp, err = http.Post("https://testmagnet.ngd.network", "application/json", requestBody)
+		resp, err = http.Post("https://n3t5.n3magnet.xyz:444", "application/json", requestBody)
 	default:
-		resp, err = http.Post("https://neofura.ngd.network", "application/json", requestBody)
+		resp, err = http.Post("https://mainnet.n3magnet.xyz:444", "application/json", requestBody)
 	}
 	if err != nil {
 		fmt.Fprintf(w,"Repost error")
