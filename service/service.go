@@ -92,6 +92,7 @@ func (s *Service)AuthProjectId(w http.ResponseWriter, r *http.Request) {
 	if err == mongo.ErrNoDocuments || err != nil {
 		fmt.Println("=================PROJECT ID DOESN'T EXIST===============")
 		fmt.Fprintf(w, "invalid projectId "+apikey)
+		fmt.Println(err)
 		return
 	}
 	limitPerSecond = result["limitpersecond"].(int32)
