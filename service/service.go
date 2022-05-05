@@ -20,6 +20,7 @@ type Service struct {
 	Redis *redis.Client
 	Db  *mongo.Client
 	DbName string
+	WhiteList map[string]int
 }
 
 type visitor struct {

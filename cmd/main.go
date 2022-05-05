@@ -32,7 +32,10 @@ func main()  {
 	default:
 		fmt.Println("Runtime: default")
 	}
-	tool.EncodeMd5("465355e80ce88bbf542a58eee1dadedf","4ab781f72c0bdb4edfe1565282ff93e0","1648698459000")
+	whiteList := map[string]int{
+		"a": 1,
+	}
+	tool.EncodeMd5("d74fd1c42f4bc21114d0c5f1500f366b","80e8365ede8806b5daf0d72f62c01e22","1651724951696")
 	cfg, err :=  tool.OpenConfigFile()
 	if err != nil {
 		log.Fatal(" open file error")
@@ -42,6 +45,7 @@ func main()  {
 	s := &service.Service{
 		Db: co,
 		DbName: dbName,
+		WhiteList: whiteList,
 	}
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc("/projectId/{id}",s.AuthProjectId)
