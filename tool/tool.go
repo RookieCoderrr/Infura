@@ -117,17 +117,19 @@ func RepostRequest(w http.ResponseWriter, r *http.Request, apiRequest primitive.
 		fmt.Fprintf(w, "ApiRequest not permitted.")
 		return nil
 	}
-    params := request["params"].(map[string]interface{}) //interface to map
-    if params["ContractHash"] != nil {
-		if contract, ok := params["ContractHash"].(string) ; ok {
-			if !CheckContractAddress(contractAddress,contract) {
-				fmt.Println("=================ContractAddress not permitted===============")
-				fmt.Fprintf(w, "ContractAddress not permitted.")
-				return nil
+	if method != "invokefunction" {
+		params := request["params"].(map[string]interface{}) //interface to map
+		if params["ContractHash"] != nil {
+			if contract, ok := params["ContractHash"].(string) ; ok {
+				if !CheckContractAddress(contractAddress,contract) {
+					fmt.Println("=================ContractAddress not permitted===============")
+					fmt.Fprintf(w, "ContractAddress not permitted.")
+					return nil
+				}
 			}
 		}
+		fmt.Println(request,"success")
 	}
-	fmt.Println(request,"success")
 	requestBody := bytes.NewBuffer(body)
 	w.Header().Set("Content-Type", "application/json")
 	rt := os.ExpandEnv("${RUNTIME}")
