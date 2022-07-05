@@ -5,8 +5,8 @@ import (
 	"Infura/tool"
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/robfig/cron/v3"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
@@ -47,18 +47,19 @@ func main()  {
 		DbName: dbName,
 		WhiteList: whiteList,
 	}
-	muxRouter := mux.NewRouter()
-	muxRouter.HandleFunc("/projectId/{id}",s.AuthProjectId)
-	muxRouter.HandleFunc("/projectId/",s.ErrProjectId)
-	muxRouter.HandleFunc("/{params}",s.ErrProjectId)
-	muxRouter.HandleFunc("/",s.ErrProjectId)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/projectId/{id}",s.AuthProjectId)
+	mux.HandleFunc("/projectId/",s.ErrProjectId)
+	mux.HandleFunc("/{params}",s.ErrProjectId)
+	mux.HandleFunc("/",s.ErrProjectId)
 	c := cron.New()
 	c.AddFunc("@daily",func(){
 		fmt.Println("Start daily job")
 		tool.ResetRequestCount(co,context.TODO(),dbName)
 	})
 	c.Start()
-	http.ListenAndServe(":1926",muxRouter)
+	handler := cors.Default().Handler(mux)
+	http.ListenAndServe(":1926",handler)
 
 }
 
