@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/cors"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -47,18 +48,18 @@ func main()  {
 		DbName: dbName,
 		WhiteList: whiteList,
 	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/projectId/{id}",s.AuthProjectId)
-	mux.HandleFunc("/projectId/",s.ErrProjectId)
-	mux.HandleFunc("/{params}",s.ErrProjectId)
-	mux.HandleFunc("/",s.ErrProjectId)
+	r := mux.NewRouter()
+	r.HandleFunc("/projectId/{id}",s.AuthProjectId)
+	r.HandleFunc("/projectId/",s.ErrProjectId)
+	r.HandleFunc("/{params}",s.ErrProjectId)
+	r.HandleFunc("/",s.ErrProjectId)
 	c := cron.New()
 	c.AddFunc("@daily",func(){
 		fmt.Println("Start daily job")
 		tool.ResetRequestCount(co,context.TODO(),dbName)
 	})
 	c.Start()
-	handler := cors.Default().Handler(mux)
+	handler := cors.Default().Handler(r)
 	http.ListenAndServe(":1926",handler)
 
 }
